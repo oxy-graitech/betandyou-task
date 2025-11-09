@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div
-      className="relative flex h-dvh items-center justify-center bg-cover bg-center"
+      className="relative flex h-dvh items-center justify-center overflow-hidden bg-cover bg-center"
       style={{
         backgroundImage: `image-set(
           url(${mainBgImg}) 1x,
@@ -29,6 +29,10 @@ function App() {
         alt="Character"
         srcSet={`${characterImg} 1x, ${characterImg2x} 2x, ${characterImg3x} 3x`}
         className="absolute z-20 -mr-[80px] -mb-10 max-h-full max-w-full"
+        style={{
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
         initial={{ opacity: 0, y: 20 }}
         animate={{
           opacity: 1,
@@ -48,7 +52,13 @@ function App() {
         alt="Logo"
         className="absolute top-[5px] left-[5px] z-10 w-[206px]"
       />
-      <div className="absolute z-0 size-60 bg-[#FFFFE3] blur-[120px]"></div>
+      <div
+        className="absolute z-0 size-60 bg-[#FFFFE3] blur-[120px]"
+        style={{
+          willChange: "auto",
+          transform: "translateZ(0)",
+        }}
+      ></div>
       <Reel
         className="absolute bottom-0 z-40"
         onSpinClick={() => setShowModal(true)}

@@ -158,6 +158,10 @@ function ReelColumn({
     >
       <motion.div
         className="flex flex-col"
+        style={{
+          willChange: isSpinning ? "transform" : "auto",
+          transform: "translateZ(0)",
+        }}
         animate={
           isSpinning
             ? { y: [0, -ITEM_HEIGHT * GRID_ROWS * 8] }
@@ -190,10 +194,6 @@ function ReelColumn({
                   ? getSymbolById(finalSymbols[targetIndex])
                   : getRandomSymbol();
             }
-            // Generate a random delay for each item based on position
-            const randomDelay =
-              colIndex * 0.05 + rowIndex * 0.02 + Math.random() * 0.3;
-
             // Check if this is a crown item in the final win position
             // Only show border when animation has stopped
             // When hasCompletedSpin is true, the strip is at y: -ITEM_HEIGHT * GRID_ROWS * 8
@@ -208,6 +208,16 @@ function ReelColumn({
               finalRowIndex >= 0 &&
               finalRowIndex < GRID_ROWS &&
               finalGrid[finalRowIndex]?.[colIndex] === "crown";
+
+            // Animate appearance for visible items (first GRID_ROWS items or final position items)
+            // Only animate visible items to maintain performance
+            const isVisibleItem = rowIndex < GRID_ROWS || isFinalWinPosition;
+            const shouldAnimateAppearance = isVisibleItem && !isSpinning;
+            const randomDelay = shouldAnimateAppearance
+              ? colIndex * 0.05 +
+                (rowIndex < GRID_ROWS ? rowIndex : finalRowIndex) * 0.02 +
+                Math.random() * 0.2
+              : 0;
 
             return (
               <div
@@ -224,36 +234,47 @@ function ReelColumn({
                       ? "rounded-lg border-4 border-yellow-400"
                       : ""
                   }`}
-                  style={
-                    isCrownInWinPosition
+                  style={{
+                    ...(isCrownInWinPosition
                       ? {
-                          boxShadow: "0 0 20px rgba(255, 215, 0, 0.8)",
+                          boxShadow: "0 0 15px rgba(255, 215, 0, 0.6)",
+                          willChange: "transform",
+                          transform: "translateZ(0)",
                         }
-                      : undefined
+                      : {}),
+                  }}
+                  initial={
+                    shouldAnimateAppearance ? { opacity: 0, scale: 0.5 } : false
                   }
-                  initial={{ opacity: 0, scale: 0.5 }}
                   animate={{
                     opacity: 1,
-                    scale: isCrownInWinPosition ? [1, 1.1, 1] : 1,
+                    scale:
+                      isCrownInWinPosition && shouldAnimateAppearance
+                        ? [1, 1.1, 1]
+                        : 1,
                   }}
-                  transition={{
-                    opacity: {
-                      duration: 0.5,
-                      delay: randomDelay,
-                      ease: [0.25, 0.1, 0.25, 1],
-                    },
-                    scale: isCrownInWinPosition
+                  transition={
+                    shouldAnimateAppearance
                       ? {
-                          duration: 0.6,
-                          delay: 0.2,
-                          ease: [0.25, 0.1, 0.25, 1],
+                          opacity: {
+                            duration: 0.5,
+                            delay: randomDelay,
+                            ease: [0.25, 0.1, 0.25, 1],
+                          },
+                          scale: isCrownInWinPosition
+                            ? {
+                                duration: 0.6,
+                                delay: 0.2,
+                                ease: [0.25, 0.1, 0.25, 1],
+                              }
+                            : {
+                                duration: 0.5,
+                                delay: randomDelay,
+                                ease: [0.25, 0.1, 0.25, 1],
+                              },
                         }
-                      : {
-                          duration: 0.5,
-                          delay: randomDelay,
-                          ease: [0.25, 0.1, 0.25, 1],
-                        },
-                  }}
+                      : { duration: 0 }
+                  }
                 />
               </div>
             );
@@ -371,6 +392,10 @@ function Reel({ className, onSpinClick }: ReelProps) {
           src={rotateIcon}
           alt=""
           className="w-[87px]"
+          style={{
+            willChange: "transform",
+            transform: "translateZ(0)",
+          }}
           animate={isSpinning ? { rotate: 360 } : { rotate: [0, 30, 0] }}
           transition={
             isSpinning
@@ -392,7 +417,20 @@ function Reel({ className, onSpinClick }: ReelProps) {
               : undefined
           }
         />
-        <div className="absolute -z-10 size-[95px] bg-[#FFEE04] blur-[44px]" />
+        <motion.div
+          className="absolute -z-10 size-[95px] bg-[#FFEE04] blur-[44px]"
+          style={{
+            willChange: "auto",
+            transform: "translateZ(0)",
+          }}
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{
+            duration: 0.5,
+            delay: 1,
+            ease: [0.25, 0.1, 0.25, 1],
+          }}
+        />
       </motion.button>
     </motion.div>
   );
