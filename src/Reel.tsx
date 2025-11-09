@@ -129,12 +129,14 @@ function ReelColumn({
   grid,
   targetGrid,
   isSpinning,
+  hasCompletedSpin,
   onColumnComplete,
 }: {
   colIndex: number;
   grid: string[][];
   targetGrid: string[][] | null;
   isSpinning: boolean;
+  hasCompletedSpin: boolean;
   onColumnComplete: (colIndex: number) => void;
 }) {
   const getSymbolById = (id: string) =>
@@ -146,6 +148,9 @@ function ReelColumn({
     ? targetGrid.map((row) => row[colIndex])
     : grid.map((row) => row[colIndex]);
 
+  // Get the final grid to check for crown items in win position
+  const finalGrid = targetGrid || grid;
+
   return (
     <div
       className="relative overflow-hidden"
@@ -154,7 +159,11 @@ function ReelColumn({
       <motion.div
         className="flex flex-col"
         animate={
-          isSpinning ? { y: [0, -ITEM_HEIGHT * GRID_ROWS * 8] } : { y: 0 }
+          isSpinning
+            ? { y: [0, -ITEM_HEIGHT * GRID_ROWS * 8] }
+            : hasCompletedSpin
+              ? { y: -ITEM_HEIGHT * GRID_ROWS * 8 }
+              : { y: 0 }
         }
         transition={
           isSpinning
@@ -181,17 +190,70 @@ function ReelColumn({
                   ? getSymbolById(finalSymbols[targetIndex])
                   : getRandomSymbol();
             }
+            // Generate a random delay for each item based on position
+            const randomDelay =
+              colIndex * 0.05 + rowIndex * 0.02 + Math.random() * 0.3;
+
+            // Check if this is a crown item in the final win position
+            // Only show border when animation has stopped
+            // When hasCompletedSpin is true, the strip is at y: -ITEM_HEIGHT * GRID_ROWS * 8
+            // So visible items are at rowIndex >= GRID_ROWS * 8 (the last GRID_ROWS items)
+            const isFinalWinPosition = rowIndex >= GRID_ROWS * 8;
+            const finalRowIndex = isFinalWinPosition
+              ? rowIndex - GRID_ROWS * 8
+              : -1;
+            const isCrownInWinPosition =
+              hasCompletedSpin &&
+              isFinalWinPosition &&
+              finalRowIndex >= 0 &&
+              finalRowIndex < GRID_ROWS &&
+              finalGrid[finalRowIndex]?.[colIndex] === "crown";
+
             return (
               <div
                 key={rowIndex}
                 className="flex items-center justify-center"
                 style={{ height: ITEM_HEIGHT }}
               >
-                <img
+                <motion.img
                   src={symbol.images["1x"]}
                   alt={symbol.name}
                   srcSet={`${symbol.images["1x"]} 1x, ${symbol.images["2x"]} 2x, ${symbol.images["3x"]} 3x`}
-                  className="h-full w-full object-contain"
+                  className={`h-full w-full object-contain ${
+                    isCrownInWinPosition
+                      ? "rounded-lg border-4 border-yellow-400"
+                      : ""
+                  }`}
+                  style={
+                    isCrownInWinPosition
+                      ? {
+                          boxShadow: "0 0 20px rgba(255, 215, 0, 0.8)",
+                        }
+                      : undefined
+                  }
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{
+                    opacity: 1,
+                    scale: isCrownInWinPosition ? [1, 1.1, 1] : 1,
+                  }}
+                  transition={{
+                    opacity: {
+                      duration: 0.5,
+                      delay: randomDelay,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    },
+                    scale: isCrownInWinPosition
+                      ? {
+                          duration: 0.6,
+                          delay: 0.2,
+                          ease: [0.25, 0.1, 0.25, 1],
+                        }
+                      : {
+                          duration: 0.5,
+                          delay: randomDelay,
+                          ease: [0.25, 0.1, 0.25, 1],
+                        },
+                  }}
                 />
               </div>
             );
@@ -217,6 +279,7 @@ function Reel({ className, onSpinClick }: ReelProps) {
     new Set(),
   );
   const [targetGrid, setTargetGrid] = useState<string[][] | null>(null);
+  const [hasCompletedSpin, setHasCompletedSpin] = useState(false);
   const completedColumnsRef = useRef<Set<number>>(new Set());
 
   const handleColumnComplete = useCallback(
@@ -228,11 +291,12 @@ function Reel({ className, onSpinClick }: ReelProps) {
           setTargetGrid(null);
           setSpinningColumns(new Set());
           setIsSpinning(false);
+          setHasCompletedSpin(true);
           completedColumnsRef.current.clear();
 
           // Open modal when animation completes and win combination is set
           if (onSpinClick) {
-            setTimeout(() => onSpinClick(), 500);
+            setTimeout(() => onSpinClick(), 1500);
           }
         });
       }
@@ -243,6 +307,7 @@ function Reel({ className, onSpinClick }: ReelProps) {
   const handleSpin = useCallback(() => {
     if (isSpinning) return;
     setIsSpinning(true);
+    setHasCompletedSpin(false);
     completedColumnsRef.current.clear();
     setSpinningColumns(new Set(Array.from({ length: GRID_COLS }, (_, i) => i)));
     // Always use WIN_GRID as the target
@@ -281,6 +346,7 @@ function Reel({ className, onSpinClick }: ReelProps) {
                 grid={grid}
                 targetGrid={targetGrid}
                 isSpinning={spinningColumns.has(colIndex)}
+                hasCompletedSpin={hasCompletedSpin}
                 onColumnComplete={handleColumnComplete}
               />
             ))}
@@ -298,8 +364,6 @@ function Reel({ className, onSpinClick }: ReelProps) {
         style={{
           background: `linear-gradient(180deg, #FFE6A2 0%, ${theme.colors.accent} 58.5%, #997002 132.5%)`,
         }}
-        whileHover="hover"
-        initial="initial"
         onClick={handleSpin}
         disabled={isSpinning}
       >
@@ -322,7 +386,11 @@ function Reel({ className, onSpinClick }: ReelProps) {
                   },
                 }
           }
-          variants={{ initial: { rotate: 0 }, hover: { rotate: 30 } }}
+          whileHover={
+            !isSpinning
+              ? { rotate: 30, transition: { duration: 0.2, delay: 0 } }
+              : undefined
+          }
         />
         <div className="absolute -z-10 size-[95px] bg-[#FFEE04] blur-[44px]" />
       </motion.button>

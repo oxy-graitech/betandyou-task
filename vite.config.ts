@@ -6,4 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: "/betandyou-task/",
+  server: {
+    allowedHosts: ["slug-sensible-giraffe.ngrok-free.app"],
+  },
 });

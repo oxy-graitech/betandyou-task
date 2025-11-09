@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div
-      className="relative flex h-screen items-center justify-center overscroll-none bg-cover bg-center"
+      className="relative flex h-dvh items-center justify-center bg-cover bg-center"
       style={{
         backgroundImage: `image-set(
           url(${mainBgImg}) 1x,
@@ -28,7 +28,7 @@ function App() {
         src={characterImg}
         alt="Character"
         srcSet={`${characterImg} 1x, ${characterImg2x} 2x, ${characterImg3x} 3x`}
-        className="absolute z-20 -mr-8 max-h-full max-w-full"
+        className="absolute z-20 -mr-[80px] -mb-10 max-h-full max-w-full"
         initial={{ opacity: 0, y: 20 }}
         animate={{
           opacity: 1,

@@ -3,11 +3,16 @@
 
 @theme {
   --color-primary: #002778;
-  --color-accent: #FFBB04;
+  --color-accent: #ffbb04;
 }
 
 @layer base {
   html {
     font-family: "Montserrat", sans-serif;
+  }
+
+  html,
+  body {
+    overscroll-behavior: none;
   }
 }
